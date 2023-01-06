@@ -25,13 +25,21 @@ const handleFormValidationState = (elements, validationState) => {
   }
 };
 
-const initView = (elements) => (path, value) => {
+const renderError = (i18nInstance, elements, error) => {
+  const { feedback } = elements;
+  feedback.textContent = error === null ? '' : i18nInstance.t(`rssForm.errors.${error}`);
+};
+
+const initView = (i18nInstance, elements) => (path, value) => {
   switch (path) {
     case 'rssForm.state':
       handleFormState(elements, value);
       break;
     case 'rssForm.validationState':
       handleFormValidationState(elements, value);
+      break;
+    case 'rssForm.error':
+      renderError(i18nInstance, elements, value);
       break;
     default:
       break;
