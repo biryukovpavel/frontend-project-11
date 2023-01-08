@@ -1,10 +1,32 @@
-const handleFormState = (elements, state) => {
+const handleFormState = (i18nInstance, elements, state) => {
+  const {
+    form, input, submitButton, feedback,
+  } = elements;
   switch (state) {
     case 'filling':
+      input.removeAttribute('readonly');
+      input.removeAttribute('disabled');
+      submitButton.disabled = false;
+      break;
+    case 'processing':
+      input.setAttribute('readonly', 'true');
+      input.setAttribute('disabled', 'true');
+      submitButton.disabled = true;
       break;
     case 'finished':
-      elements.form.reset();
-      elements.input.focus();
+      input.removeAttribute('readonly');
+      input.removeAttribute('disabled');
+      submitButton.disabled = false;
+      form.reset();
+      input.focus();
+      feedback.classList.remove('text-danger');
+      feedback.classList.add('text-success');
+      feedback.textContent = i18nInstance.t('rssForm.state.finished');
+      break;
+    case 'failed':
+      input.removeAttribute('readonly');
+      input.removeAttribute('disabled');
+      submitButton.disabled = false;
       break;
     default:
       throw new Error(`Unknown state: ${state}`);
@@ -27,19 +49,104 @@ const handleFormValidationState = (elements, validationState) => {
 
 const renderError = (i18nInstance, elements, error) => {
   const { feedback } = elements;
-  feedback.textContent = error === null ? '' : i18nInstance.t(`rssForm.errors.${error}`);
+  feedback.classList.remove('text-success');
+  feedback.classList.add('text-danger');
+  feedback.textContent = error === null ? '' : i18nInstance.t([`rssForm.errors.${error}`, 'rssForm.errors.unknown']);
+};
+
+const renderFeeds = (i18nInstance, elements, feeds) => {
+  const { feedsContainer } = elements;
+  const div = document.createElement('div');
+  div.classList.add('card', 'border-0');
+
+  const divHeader = document.createElement('div');
+  divHeader.classList.add('card-body');
+  const h2 = document.createElement('h2');
+  h2.classList.add('card-title', 'h4');
+  h2.textContent = i18nInstance.t('rssForm.feeds');
+  divHeader.append(h2);
+
+  const ul = document.createElement('ul');
+  ul.classList.add('list-group', 'border-0', 'rounded-0');
+  const feedsList = feeds.map((feed) => {
+    const li = document.createElement('li');
+    li.classList.add('list-group-item', 'border-0', 'border-end-0');
+
+    const h3 = document.createElement('h3');
+    h3.classList.add('h6', 'm-0');
+    h3.textContent = feed.title;
+
+    const p = document.createElement('p');
+    p.classList.add('m-0', 'small', 'text-black-50');
+    p.textContent = feed.description;
+
+    li.append(h3, p);
+    return li;
+  });
+  ul.append(...feedsList);
+
+  div.append(divHeader, ul);
+  feedsContainer.replaceChildren(div);
+};
+
+const renderPosts = (i18nInstance, elements, posts) => {
+  const { postsContainer } = elements;
+  const div = document.createElement('div');
+  div.classList.add('card', 'border-0');
+
+  const divHeader = document.createElement('div');
+  divHeader.classList.add('card-body');
+  const h2 = document.createElement('h2');
+  h2.classList.add('card-title', 'h4');
+  h2.textContent = i18nInstance.t('rssForm.posts');
+  divHeader.append(h2);
+
+  const ul = document.createElement('ul');
+  ul.classList.add('list-group', 'border-0', 'rounded-0');
+  const postsList = posts.map((post) => {
+    const li = document.createElement('li');
+    li.classList.add(
+      'list-group-item',
+      'd-flex',
+      'justify-content-between',
+      'align-items-start',
+      'border-0',
+      'border-end-0',
+    );
+
+    const a = document.createElement('a');
+    a.setAttribute('href', post.link);
+    a.setAttribute('target', '_blank');
+    a.setAttribute('rel', 'noopener noreferrer');
+    a.classList.add('fw-bold');
+    a.dataset.id = post.id;
+    a.textContent = post.title;
+
+    li.append(a);
+    return li;
+  });
+  ul.append(...postsList);
+
+  div.append(divHeader, ul);
+  postsContainer.replaceChildren(div);
 };
 
 const initView = (i18nInstance, elements) => (path, value) => {
   switch (path) {
     case 'rssForm.state':
-      handleFormState(elements, value);
+      handleFormState(i18nInstance, elements, value);
       break;
     case 'rssForm.validationState':
       handleFormValidationState(elements, value);
       break;
     case 'rssForm.error':
       renderError(i18nInstance, elements, value);
+      break;
+    case 'feeds':
+      renderFeeds(i18nInstance, elements, value);
+      break;
+    case 'posts':
+      renderPosts(i18nInstance, elements, value);
       break;
     default:
       break;
