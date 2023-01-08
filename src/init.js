@@ -4,6 +4,7 @@ import onChange from 'on-change';
 import i18next from 'i18next';
 import axios from 'axios';
 import uniqueId from 'lodash/uniqueId.js';
+import differenceBy from 'lodash/differenceBy.js';
 import initView from './view.js';
 import resources from './locales/index.js';
 import parse from './parser.js';
@@ -43,6 +44,30 @@ const getFullUrl = (rssUrl) => {
   searchParams.set('url', rssUrl);
   searchParams.set('disableCache', 'true');
   return url.toString();
+};
+
+const updatePosts = (watchedState) => {
+  const { feeds } = watchedState;
+  const feedPromises = feeds.map((feed) => {
+    const url = getFullUrl(feed.url);
+    return axios.get(url)
+      .then((response) => {
+        const rssData = parse(response.data.contents);
+        const posts = rssData.items.map((item) => ({
+          ...item,
+          id: uniqueId(),
+          channelId: feed.id,
+        }));
+        const currentPosts = watchedState.posts.filter((post) => post.channelId === feed.id);
+        const newPosts = differenceBy(posts, currentPosts, 'title');
+        watchedState.posts.unshift(...newPosts);
+      })
+      .catch((error) => {
+        console.error(error); // eslint-disable-line no-console
+      });
+  });
+
+  Promise.all(feedPromises).finally(() => setTimeout(() => updatePosts(watchedState), 5000));
 };
 
 export default () => {
@@ -127,5 +152,7 @@ export default () => {
             }
           });
       });
+
+      setTimeout(() => updatePosts(watchedState), 5000);
     });
 };
