@@ -89,7 +89,8 @@ const renderFeeds = (i18nInstance, elements, feeds) => {
   feedsContainer.replaceChildren(div);
 };
 
-const renderPosts = (i18nInstance, elements, posts) => {
+const renderPosts = (state, i18nInstance, elements) => {
+  const { posts, uiState } = state;
   const { postsContainer } = elements;
   const div = document.createElement('div');
   div.classList.add('card', 'border-0');
@@ -118,11 +119,20 @@ const renderPosts = (i18nInstance, elements, posts) => {
     a.setAttribute('href', post.link);
     a.setAttribute('target', '_blank');
     a.setAttribute('rel', 'noopener noreferrer');
-    a.classList.add('fw-bold');
+    const classes = uiState.readPosts.has(post.id) ? 'fw-normal' : 'fw-bold';
+    a.classList.add(classes);
     a.dataset.id = post.id;
     a.textContent = post.title;
 
-    li.append(a);
+    const button = document.createElement('button');
+    button.setAttribute('type', 'button');
+    button.classList.add('btn', 'btn-outline-primary', 'btn-sm');
+    button.dataset.id = post.id;
+    button.dataset.bsToggle = 'modal';
+    button.dataset.bsTarget = '#modal';
+    button.textContent = i18nInstance.t('rssForm.view');
+
+    li.append(a, button);
     return li;
   });
   ul.append(...postsList);
@@ -131,7 +141,18 @@ const renderPosts = (i18nInstance, elements, posts) => {
   postsContainer.replaceChildren(div);
 };
 
-const initView = (i18nInstance, elements) => (path, value) => {
+const handleModal = (state, elements, postId) => {
+  const currentPost = state.posts.find(({ id }) => id === postId);
+  const { modal } = elements;
+  const title = modal.querySelector('.modal-title');
+  const body = modal.querySelector('.modal-body');
+  const fullArticle = modal.querySelector('.full-article');
+  title.textContent = currentPost.title;
+  body.textContent = currentPost.description;
+  fullArticle.href = currentPost.link;
+};
+
+const initView = (i18nInstance, elements, state) => (path, value) => {
   switch (path) {
     case 'rssForm.state':
       handleFormState(i18nInstance, elements, value);
@@ -146,7 +167,11 @@ const initView = (i18nInstance, elements) => (path, value) => {
       renderFeeds(i18nInstance, elements, value);
       break;
     case 'posts':
-      renderPosts(i18nInstance, elements, value);
+    case 'uiState.readPosts':
+      renderPosts(state, i18nInstance, elements);
+      break;
+    case 'uiState.modal.postId':
+      handleModal(state, elements, value);
       break;
     default:
       break;

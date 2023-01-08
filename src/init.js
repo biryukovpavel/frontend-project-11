@@ -1,4 +1,4 @@
-// import * as bootstrap from 'bootstrap';
+import 'bootstrap';
 import * as yup from 'yup';
 import onChange from 'on-change';
 import i18next from 'i18next';
@@ -58,7 +58,7 @@ const updatePosts = (watchedState) => {
           id: uniqueId(),
           channelId: feed.id,
         }));
-        const currentPosts = watchedState.posts.filter((post) => post.channelId === feed.id);
+        const currentPosts = watchedState.posts.filter(({ channelId }) => channelId === feed.id);
         const newPosts = differenceBy(posts, currentPosts, 'title');
         watchedState.posts.unshift(...newPosts);
       })
@@ -90,6 +90,10 @@ export default () => {
         },
         feeds: [],
         posts: [],
+        uiState: {
+          modal: { postId: null },
+          readPosts: new Set(),
+        },
       };
 
       const elements = {
@@ -99,9 +103,10 @@ export default () => {
         submitButton: document.querySelector('button[type="submit"]'),
         feedsContainer: document.querySelector('.feeds'),
         postsContainer: document.querySelector('.posts'),
+        modal: document.querySelector('#modal'),
       };
 
-      const watchedState = onChange(state, initView(i18nInstance, elements));
+      const watchedState = onChange(state, initView(i18nInstance, elements, state));
 
       elements.form.addEventListener('submit', (e) => {
         e.preventDefault();
@@ -151,6 +156,15 @@ export default () => {
               watchedState.rssForm.error = 'unknown';
             }
           });
+      });
+
+      elements.postsContainer.addEventListener('click', (e) => {
+        const { dataset } = e.target;
+        if (!('id' in dataset)) {
+          return;
+        }
+        watchedState.uiState.modal.postId = dataset.id;
+        watchedState.uiState.readPosts.add(dataset.id);
       });
 
       setTimeout(() => updatePosts(watchedState), 5000);
