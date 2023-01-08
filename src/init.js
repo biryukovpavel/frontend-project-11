@@ -70,6 +70,98 @@ const updatePosts = (watchedState) => {
   Promise.all(feedPromises).finally(() => setTimeout(() => updatePosts(watchedState), 5000));
 };
 
+const app = (i18nInstance) => {
+  const state = {
+    rssForm: {
+      state: 'filling',
+      validationState: 'valid',
+      data: {
+        url: '',
+      },
+      error: null,
+    },
+    feeds: [],
+    posts: [],
+    uiState: {
+      modal: { postId: null },
+      readPosts: new Set(),
+    },
+  };
+
+  const elements = {
+    form: document.querySelector('.rss-form'),
+    input: document.querySelector('#url-input'),
+    feedback: document.querySelector('.feedback'),
+    submitButton: document.querySelector('button[type="submit"]'),
+    feedsContainer: document.querySelector('.feeds'),
+    postsContainer: document.querySelector('.posts'),
+    modal: document.querySelector('#modal'),
+  };
+
+  const watchedState = onChange(state, initView(i18nInstance, elements, state));
+
+  elements.form.addEventListener('submit', (e) => {
+    e.preventDefault();
+
+    const formData = new FormData(e.target);
+    watchedState.rssForm.data.url = formData.get('url');
+
+    validate(watchedState.rssForm.data, watchedState.feeds)
+      .then(() => {
+        watchedState.rssForm.validationState = 'valid';
+        watchedState.rssForm.error = null;
+        watchedState.rssForm.state = 'processing';
+
+        const url = getFullUrl(watchedState.rssForm.data.url);
+        return axios.get(url);
+      })
+      .then((response) => {
+        const rssData = parse(response.data.contents);
+        const feeds = {
+          id: uniqueId(),
+          url: watchedState.rssForm.data.url,
+          title: rssData.title,
+          description: rssData.description,
+        };
+        const posts = rssData.items.map((item) => ({
+          ...item,
+          id: uniqueId(),
+          channelId: feeds.id,
+        }));
+        watchedState.feeds.unshift(feeds);
+        watchedState.posts.unshift(...posts);
+        watchedState.rssForm.state = 'finished';
+      })
+      .catch((error) => {
+        console.log(error); // eslint-disable-line no-console
+        if (error.isValidationError) {
+          watchedState.rssForm.validationState = 'invalid';
+          watchedState.rssForm.error = error.message;
+        } else if (error.isAxiosError) {
+          watchedState.rssForm.state = 'failed';
+          watchedState.rssForm.error = 'network';
+        } else if (error.isParsingError) {
+          watchedState.rssForm.state = 'failed';
+          watchedState.rssForm.error = 'invalidRss';
+        } else {
+          watchedState.rssForm.state = 'failed';
+          watchedState.rssForm.error = 'unknown';
+        }
+      });
+  });
+
+  elements.postsContainer.addEventListener('click', (e) => {
+    const { dataset } = e.target;
+    if (!('id' in dataset)) {
+      return;
+    }
+    watchedState.uiState.modal.postId = dataset.id;
+    watchedState.uiState.readPosts.add(dataset.id);
+  });
+
+  setTimeout(() => updatePosts(watchedState), 5000);
+};
+
 export default () => {
   const i18nInstance = i18next.createInstance();
   i18nInstance
@@ -78,95 +170,5 @@ export default () => {
       debug: false,
       resources,
     })
-    .then(() => {
-      const state = {
-        rssForm: {
-          state: 'filling',
-          validationState: 'valid',
-          data: {
-            url: '',
-          },
-          error: null,
-        },
-        feeds: [],
-        posts: [],
-        uiState: {
-          modal: { postId: null },
-          readPosts: new Set(),
-        },
-      };
-
-      const elements = {
-        form: document.querySelector('.rss-form'),
-        input: document.querySelector('#url-input'),
-        feedback: document.querySelector('.feedback'),
-        submitButton: document.querySelector('button[type="submit"]'),
-        feedsContainer: document.querySelector('.feeds'),
-        postsContainer: document.querySelector('.posts'),
-        modal: document.querySelector('#modal'),
-      };
-
-      const watchedState = onChange(state, initView(i18nInstance, elements, state));
-
-      elements.form.addEventListener('submit', (e) => {
-        e.preventDefault();
-
-        const formData = new FormData(e.target);
-        watchedState.rssForm.data.url = formData.get('url');
-
-        validate(watchedState.rssForm.data, watchedState.feeds)
-          .then(() => {
-            watchedState.rssForm.validationState = 'valid';
-            watchedState.rssForm.error = null;
-            watchedState.rssForm.state = 'processing';
-
-            const url = getFullUrl(watchedState.rssForm.data.url);
-            return axios.get(url);
-          })
-          .then((response) => {
-            const rssData = parse(response.data.contents);
-            const feeds = {
-              id: uniqueId(),
-              url: watchedState.rssForm.data.url,
-              title: rssData.title,
-              description: rssData.description,
-            };
-            const posts = rssData.items.map((item) => ({
-              ...item,
-              id: uniqueId(),
-              channelId: feeds.id,
-            }));
-            watchedState.feeds.unshift(feeds);
-            watchedState.posts.unshift(...posts);
-            watchedState.rssForm.state = 'finished';
-          })
-          .catch((error) => {
-            console.log(error); // eslint-disable-line no-console
-            if (error.isValidationError) {
-              watchedState.rssForm.validationState = 'invalid';
-              watchedState.rssForm.error = error.message;
-            } else if (error.isAxiosError) {
-              watchedState.rssForm.state = 'failed';
-              watchedState.rssForm.error = 'network';
-            } else if (error.isParsingError) {
-              watchedState.rssForm.state = 'failed';
-              watchedState.rssForm.error = 'invalidRss';
-            } else {
-              watchedState.rssForm.state = 'failed';
-              watchedState.rssForm.error = 'unknown';
-            }
-          });
-      });
-
-      elements.postsContainer.addEventListener('click', (e) => {
-        const { dataset } = e.target;
-        if (!('id' in dataset)) {
-          return;
-        }
-        watchedState.uiState.modal.postId = dataset.id;
-        watchedState.uiState.readPosts.add(dataset.id);
-      });
-
-      setTimeout(() => updatePosts(watchedState), 5000);
-    });
+    .then(() => app(i18nInstance));
 };
