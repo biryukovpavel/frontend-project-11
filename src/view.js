@@ -20,7 +20,7 @@ const handleFormState = (i18nInstance, elements, state) => {
       input.focus();
       feedback.classList.remove('text-danger');
       feedback.classList.add('text-success');
-      feedback.textContent = i18nInstance.t('rssForm.state.finished');
+      feedback.textContent = i18nInstance.t('feedAddingProcess.finished');
       break;
     case 'failed':
       input.removeAttribute('readonly');
@@ -50,7 +50,7 @@ const renderError = (i18nInstance, elements, error) => {
   const { feedback } = elements;
   feedback.classList.remove('text-success');
   feedback.classList.add('text-danger');
-  feedback.textContent = error === null ? '' : i18nInstance.t([`rssForm.errors.${error}`, 'rssForm.errors.unknown']);
+  feedback.textContent = error === null ? '' : i18nInstance.t([`errors.${error}`, 'errors.unknown']);
 };
 
 const renderFeeds = (i18nInstance, elements, feeds) => {
@@ -62,7 +62,7 @@ const renderFeeds = (i18nInstance, elements, feeds) => {
   divHeader.classList.add('card-body');
   const h2 = document.createElement('h2');
   h2.classList.add('card-title', 'h4');
-  h2.textContent = i18nInstance.t('rssForm.feeds');
+  h2.textContent = i18nInstance.t('feeds');
   divHeader.append(h2);
 
   const ul = document.createElement('ul');
@@ -98,7 +98,7 @@ const renderPosts = (state, i18nInstance, elements) => {
   divHeader.classList.add('card-body');
   const h2 = document.createElement('h2');
   h2.classList.add('card-title', 'h4');
-  h2.textContent = i18nInstance.t('rssForm.posts');
+  h2.textContent = i18nInstance.t('posts');
   divHeader.append(h2);
 
   const ul = document.createElement('ul');
@@ -129,7 +129,7 @@ const renderPosts = (state, i18nInstance, elements) => {
     button.dataset.id = post.id;
     button.dataset.bsToggle = 'modal';
     button.dataset.bsTarget = '#modal';
-    button.textContent = i18nInstance.t('rssForm.view');
+    button.textContent = i18nInstance.t('view');
 
     li.append(a, button);
     return li;
@@ -153,13 +153,13 @@ const handleModal = (state, elements, postId) => {
 
 const initView = (i18nInstance, elements, state) => (path, value) => {
   switch (path) {
-    case 'rssForm.state':
+    case 'feedAddingProcess.state':
       handleFormState(i18nInstance, elements, value);
       break;
-    case 'rssForm.validationState':
+    case 'feedAddingProcess.validationState':
       handleFormValidationState(elements, value);
       break;
-    case 'rssForm.error':
+    case 'feedAddingProcess.error':
       renderError(i18nInstance, elements, value);
       break;
     case 'feeds':

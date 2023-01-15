@@ -27,12 +27,12 @@ const schema = yup.object().shape({
 });
 
 const validate = (fields, feedUrls) => schema
-    .validate(fields, { context: { feedUrls } })
-    .then(() => null)
-    .catch((e) => {
-      e.isValidationError = true;
-      throw e;
-    });
+  .validate(fields, { context: { feedUrls } })
+  .then(() => null)
+  .catch((e) => {
+    e.isValidationError = true;
+    throw e;
+  });
 
 const getFullUrl = (rssUrl) => {
   const url = new URL('/get', 'https://allorigins.hexlet.app');
@@ -69,11 +69,13 @@ const updatePosts = (watchedState) => {
 const app = (i18nInstance) => {
   const state = {
     rssForm: {
-      state: 'filling',
-      validationState: 'valid',
       data: {
         url: '',
       },
+    },
+    feedAddingProcess: {
+      state: 'filling',
+      validationState: 'valid',
       error: null,
     },
     feeds: [],
@@ -98,7 +100,7 @@ const app = (i18nInstance) => {
 
   elements.form.addEventListener('submit', (e) => {
     e.preventDefault();
-    watchedState.rssForm.state = 'processing';
+    watchedState.feedAddingProcess.state = 'processing';
 
     const formData = new FormData(e.target);
     watchedState.rssForm.data.url = formData.get('url');
@@ -106,8 +108,8 @@ const app = (i18nInstance) => {
     const feedUrls = watchedState.feeds.map((feed) => feed.url);
     validate(watchedState.rssForm.data, feedUrls)
       .then(() => {
-        watchedState.rssForm.validationState = 'valid';
-        watchedState.rssForm.error = null;
+        watchedState.feedAddingProcess.validationState = 'valid';
+        watchedState.feedAddingProcess.error = null;
 
         const url = getFullUrl(watchedState.rssForm.data.url);
         return axios.get(url);
@@ -127,21 +129,21 @@ const app = (i18nInstance) => {
         }));
         watchedState.feeds.unshift(feed);
         watchedState.posts.unshift(...posts);
-        watchedState.rssForm.state = 'finished';
+        watchedState.feedAddingProcess.state = 'finished';
       })
       .catch((error) => {
         console.log(error); // eslint-disable-line no-console
         if (error.isValidationError) {
-          watchedState.rssForm.validationState = 'invalid';
-          watchedState.rssForm.error = error.message;
+          watchedState.feedAddingProcess.validationState = 'invalid';
+          watchedState.feedAddingProcess.error = error.message;
         } else if (error.isAxiosError) {
-          watchedState.rssForm.error = 'network';
+          watchedState.feedAddingProcess.error = 'network';
         } else if (error.isParsingError) {
-          watchedState.rssForm.error = 'invalidRss';
+          watchedState.feedAddingProcess.error = 'invalidRss';
         } else {
-          watchedState.rssForm.error = 'unknown';
+          watchedState.feedAddingProcess.error = 'unknown';
         }
-        watchedState.rssForm.state = 'failed';
+        watchedState.feedAddingProcess.state = 'failed';
       });
   });
 
