@@ -116,7 +116,7 @@ const app = (i18nInstance) => {
       })
       .then((response) => {
         const rssData = parse(response.data.contents);
-        const feeds = {
+        const feed = {
           id: uniqueId(),
           url: watchedState.rssForm.data.url,
           title: rssData.title,
@@ -125,9 +125,9 @@ const app = (i18nInstance) => {
         const posts = rssData.items.map((item) => ({
           ...item,
           id: uniqueId(),
-          channelId: feeds.id,
+          channelId: feed.id,
         }));
-        watchedState.feeds.unshift(feeds);
+        watchedState.feeds.unshift(feed);
         watchedState.posts.unshift(...posts);
         watchedState.rssForm.state = 'finished';
       })
