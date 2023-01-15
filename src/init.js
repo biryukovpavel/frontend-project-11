@@ -101,6 +101,7 @@ const app = (i18nInstance) => {
 
   elements.form.addEventListener('submit', (e) => {
     e.preventDefault();
+    watchedState.rssForm.state = 'processing';
 
     const formData = new FormData(e.target);
     watchedState.rssForm.data.url = formData.get('url');
@@ -109,7 +110,6 @@ const app = (i18nInstance) => {
       .then(() => {
         watchedState.rssForm.validationState = 'valid';
         watchedState.rssForm.error = null;
-        watchedState.rssForm.state = 'processing';
 
         const url = getFullUrl(watchedState.rssForm.data.url);
         return axios.get(url);
@@ -137,15 +137,13 @@ const app = (i18nInstance) => {
           watchedState.rssForm.validationState = 'invalid';
           watchedState.rssForm.error = error.message;
         } else if (error.isAxiosError) {
-          watchedState.rssForm.state = 'failed';
           watchedState.rssForm.error = 'network';
         } else if (error.isParsingError) {
-          watchedState.rssForm.state = 'failed';
           watchedState.rssForm.error = 'invalidRss';
         } else {
-          watchedState.rssForm.state = 'failed';
           watchedState.rssForm.error = 'unknown';
         }
+        watchedState.rssForm.state = 'failed';
       });
   });
 

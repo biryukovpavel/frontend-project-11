@@ -10,7 +10,6 @@ const handleFormState = (i18nInstance, elements, state) => {
       break;
     case 'processing':
       input.setAttribute('readonly', 'true');
-      input.setAttribute('disabled', 'true');
       submitButton.disabled = true;
       break;
     case 'finished':
