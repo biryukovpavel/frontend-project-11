@@ -26,16 +26,13 @@ const schema = yup.object().shape({
     .notOneOf([yup.ref('$feedUrls')]),
 });
 
-const validate = (fields, feeds) => {
-  const feedUrls = feeds.map((feed) => feed.url);
-  return schema
+const validate = (fields, feedUrls) => schema
     .validate(fields, { context: { feedUrls } })
     .then(() => null)
     .catch((e) => {
       e.isValidationError = true;
       throw e;
     });
-};
 
 const getFullUrl = (rssUrl) => {
   const url = new URL('/get', 'https://allorigins.hexlet.app');
@@ -106,7 +103,8 @@ const app = (i18nInstance) => {
     const formData = new FormData(e.target);
     watchedState.rssForm.data.url = formData.get('url');
 
-    validate(watchedState.rssForm.data, watchedState.feeds)
+    const feedUrls = watchedState.feeds.map((feed) => feed.url);
+    validate(watchedState.rssForm.data, feedUrls)
       .then(() => {
         watchedState.rssForm.validationState = 'valid';
         watchedState.rssForm.error = null;
